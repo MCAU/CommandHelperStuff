@@ -1,0 +1,611 @@
+# MCAU CommandHelper Scripts
+~default/users/mods/admins/ops:/mcau = >>>
+    msg(concat(color(white), 'Welcome to MCAU!'))
+    assign(@pinfo, pinfo())
+    assign(@group, array_get(array_get(@pinfo,9),0))
+    if(equals(@group, 'default'), 
+        _defhelp()
+        die(_helpfooter())
+    )
+    if(equals(@group, 'users'), 
+        _userhelp()
+        die(_helpfooter())
+    )
+    if(equals(@group, 'donators'), 
+        _dhelp()
+        die(_helpfooter())
+    )
+    if(equals(@group, 'mods'),
+        _userhelp()
+        msg(sconcat('For mod commands, See', color(blue), 'http://mcau.org/mods'))
+    )
+    if(equals(@group, 'admins'),
+        msg('You derped. Nothing for you here.')
+    )
+    if(equals(@group, 'ops'),
+        msg('You derped. Nothing for you here.')
+    )
+<<<
+
+~mods/admins/ops:/promote $user = >>>
+    assign(@pinfo, pinfo())
+    if(not(or(array_contains(@pinfo[9],mods), array_contains(@pinfo[9],admins), array_contains(@pinfo[9],ops))),
+        die(Nope)
+    )
+    runas(~op, /pex user $user group set users)
+    _bc('Promotion', $user has been promoted!)
+<<<
+~mods/admins/ops:/demote $user = /pex demote $user
+~mods/admins/ops:/resetuser $user = /pex user $user delete
+~mods:/brand $user $brand =  >>>
+    assign(@pinfo, pinfo())
+    if(not(or(array_contains(@pinfo[9],mods), array_contains(@pinfo[9],admins), array_contains(@pinfo[9],ops))),
+        die('Nope')
+    )
+    try(
+        assign(@pinfo, pinfo($user))
+        if(or(array_contains(@pinfo[9],mods), array_contains(@pinfo[9],admins), array_contains(@pinfo[9],ops)),
+            die('Cant brand a mod or above.')
+        ), 
+        @var,
+        msg('Player not online. Hope you spelt their name right')
+    )
+    runas(~op, /pex user $user prefix concat('&e[', $brand, ']&8'))
+    _bc('Branding', $user has been branded $brand )
+<<<
+
+~mods:/brand $user $brand $ = msg('You can only brand with a single word')
+~mods/admins/ops:/unbrand $user = >>>
+    assign(@pinfo, pinfo())
+    if(not(or(array_contains(@pinfo[9],mods), array_contains(@pinfo[9],admins), array_contains(@pinfo[9],ops))),
+        die('Nope')
+    )
+    runas(~op, sconcat('/pex user',$user,'prefix ""'))
+    _bc('Branding', $user has been unbranded)
+<<<
+
+/donate $user = >>>
+    run(/pex user $user group set donators)
+    run(/broadcast $user 'is now a Donator')
+<<<
+
+~ops:/undonate $user = >>>
+    run(/ungod $user)
+    run(/nick $user off)
+    run(/pex user $user group set users)
+<<<
+/dtools = /kit dtools
+/unjail $user = >>>
+    run(/togglejail $user)
+    run(/pex user $user prefix concat('&e[', 'ExConvict', ']&8'))
+<<<
+
+~default/users/mods/admins/ops:/fixspleef = >>>
+    # How many seconds they have to wait before being able
+    # to re-run fixspleef
+    assign(@cooldown, 300)
+
+    if(is_null(get_value('spleef1_lastreset')), 
+        store_value('spleef1_lastreset',0)
+    )
+
+    assign(@pinfo, pinfo())
+    if(equals(array_get(array_get(@pinfo,9),0), 'default'), 
+        die('You do not have permission for this command')
+    )
+    assign(@lastreset, get_value('spleef1_lastreset'))
+    if(gt(add(@lastreset, @cooldown), divide(time(),1000)), 
+        if(equals(array_get(array_get(@pinfo,9),0), 'users'), 
+            msg(concat('[', Error, ']', ' Less than 5 minutes since last reset.'))
+            assign(@timeleft, subtract(add(@lastreset, @cooldown), divide(time(),1000)))
+            die(concat('[', Error, '] ', @timeleft, ' seconds to go'))
+        )
+    )
+    store_value('spleef1_lastreset', divide(time(),1000))
+    runas(~op, '/region select spleef-arena')
+    runas(~op, '//set 80')
+    #runas(~op, '/remove items 50') # this could cause more trouble than it's worth -- TerrorBite
+    assign(@pinfo, pinfo())
+    _bc(Spleef, concat(array_get(@pinfo,4), ' has just reset the spleef arena with the /fixspleef command!'))
+<<<
+
+~default:/derp = >>>
+    assign(@pinfo, pinfo())
+    if(equals(array_get(array_get(@pinfo,9),0), 'default'), 
+        die('You do not have permission for this command')
+    )
+    msg(@pinfo)
+<<<
+
+
+~newbies:default:/upgrademe = >>>
+    die(You are upgraded!)
+    assign(@pinfo, pinfo())
+    if(equals(array_get(array_get(@pinfo,9),0), 'newbies'), 
+            assign(@cmd, concat('/pex user ', @pinfo[0], ' group set default'))
+            runas(~op, @cmd)
+            die(concat('[', Promoted, ']', You are now a default user))
+    )
+   msg(concat(&e, '[', Error, ']&8 ', You are not a newbie))
+<<<
+
+
+safe:/honeybadger = >>>
+    assign(@pinfo, pinfo())
+    assign(@loc, ploc())
+    if(
+        and(
+            or(
+                equals(floor(@loc[0]),-4), 
+                equals(floor(@loc[0]),-5)
+             ),
+            or(
+                equals(floor(@loc[1]),51), 
+                equals(floor(@loc[1]),52)
+             ),
+            or(
+                equals(floor(@loc[2]),4), 
+                equals(floor(@loc[2]),5)
+             )
+        ),
+            if(not(or(array_contains(@pinfo[9],donators), array_contains(@pinfo[9],mods), array_contains(@pinfo[9],admins), array_contains(@pinfo[9],ops))),
+                msg(Honey Badger BITES YOUR FACE)
+                broadcast(concat(@pinfo[4], ' tried to mess with the Honey Badger'))
+                kill(@pinfo[0])
+                die()
+            )
+            assign(@last,get_value(concat('honeybadger.cooldown.',to_lower(player()))))
+            assign(@now,time())
+            if(is_null(@last),
+                #msg('last was null')
+                assign(@last,subtract(@now,86400000))
+                )
+            assign(@diff, subtract(@now,@last))
+            assign(@days,floor(divide(@diff,86400000)))
+            assign(@hours,floor(divide(mod(@diff,86400000),3600000)))
+            assign(@minutes,floor(divide(mod(@diff,3600000),60000)))
+            #msg(@last,',',@diff)
+            if(gte(@diff,86400000),
+                msg('Honey Badger don\'t GIVE a fuck!')
+                msg('Enjoy your Exp!!')
+                set_plevel(add(plevel(),rand(50,100)))
+                store_value(concat('honeybadger.cooldown.',to_lower(player())),time())
+                ,
+                msg('Honey Badger can only be used once per day.')
+                msg('Last used ',@hours,' hours and ',@minutes,' minutes ago.')
+            )
+        ,
+            msg('Honey Badger isn\'t standing in the right place!')
+            msg('Try to stand in the middle of the 4 blocks')
+    )
+<<<
+
+~admins:/resethb = >>>
+assign(@hb,get_values('honeybadger.cooldown'))
+assign(@keys,array_keys(@hb))
+foreach(@keys,@key,
+msg(@key)
+clear_value(@key)
+)
+<<<
+
+~mods:/c = >>>
+    assign(@pinfo, pinfo())
+    if(not(or(array_contains(@pinfo[9],mods), array_contains(@pinfo[9],admins), array_contains(@pinfo[9],ops))),
+        die(You do not have permission to enter creative mode)
+    )
+    if(equals(@pinfo[7],vanilla),die(You do not have permission to enter creative mode))
+    if(equals(pmode(),CREATIVE),
+        runas(~op, /gamemode @pinfo[0] 0)
+    , 
+        runas(~op, /gamemode @pinfo[0] 1)
+    )
+<<<
+
+safe:/z = >>>
+    assign(@pinfo, pinfo())
+    if(or(array_contains(@pinfo,jadet), array_contains(@pinfo,blakeqld)),
+      if(equals(pmode(),CREATIVE),
+          runas(~op, /gamemode @pinfo[0] 0)
+      , 
+          runas(~op, /gamemode @pinfo[0] 1)
+      )
+    )
+<<<
+        
+
+safe:/fixsign = >>>
+    assign(@pinfo, pinfo())
+    if(not(or(array_contains(@pinfo[9],mods), array_contains(@pinfo[9],admins), array_contains(@pinfo[9],ops))),
+        die('You do not have permission to edit signs')
+    )
+    msg(concat(color(white),'Usage ',color(red),'/fixsign lineno ',color(gray),'text'))
+<<<
+
+
+safe:/fixsign $line = >>>
+    assign(@pinfo, pinfo())
+    if(not(or(array_contains(@pinfo[9],mods), array_contains(@pinfo[9],admins), array_contains(@pinfo[9],ops))),
+        die('You do not have permission to edit signs')
+    )
+    if(not(is_integer($line)),
+        die(sconcat($line,'should be a line number'))
+    )
+    assign(@lineno, $line)
+    dec(@lineno)
+    if(or(gte($line,5),lte($line,0)),
+        die(sconcat('Line number',$line,'should be between 1 and 4'))
+    )
+    assign(@loc, pcursor())
+    if(not(is_sign_at(@loc)),
+        die('Your crosshairs are not looking at a sign. Sorry.')
+    )
+    assign(@text, get_sign_text(@loc))
+    array_set(@text, @lineno, '')
+    set_sign_text(@loc, @text)
+<<<
+
+
+safe:/fixsign $line $ = >>>
+    assign(@pinfo, pinfo())
+    if(not(or(array_contains(@pinfo[9],mods), array_contains(@pinfo[9],admins), array_contains(@pinfo[9],ops))),
+        die('You do not have permission to edit signs')
+    )
+    if(not(is_integer($line)),
+        die(sconcat($line,'should be a line number'))
+    )
+    assign(@lineno, $line)
+    dec(@lineno)
+    if(or(gte($line,5),lte($line,0)),
+        die(sconcat('Line number',$line,'should be between 1 and 4'))
+    )
+    assign(@loc, pcursor())
+    if(not(is_sign_at(@loc)),
+        die('Your crosshairs are not looking at a sign. Sorry.')
+    )
+    assign(@text, get_sign_text(@loc))
+    array_set(@text, @lineno, $)
+    set_sign_text(@loc, @text)
+<<<
+
+
+
+
+safe:/cfixsign $line $ = >>>
+    assign(@pinfo, pinfo())
+    if(not(or(array_contains(@pinfo[9],mods), array_contains(@pinfo[9],admins), array_contains(@pinfo[9],ops))),
+        die('You do not have permission to edit signs')
+    )
+    if(not(is_integer($line)),
+        die(sconcat($line,'should be a line number'))
+    )
+    assign(@lineno, $line)
+    dec(@lineno)
+    if(or(gte($line,5),lte($line,0)),
+        die(sconcat('Line number',$line,'should be between 1 and 4'))
+    )
+    assign(@loc, pcursor())
+    if(not(is_sign_at(@loc)),
+        die('Your crosshairs are not looking at a sign. Sorry.')
+    )
+    assign(@text, get_sign_text(@loc))
+    array_set(@text, @lineno, replace($,&,§))
+    set_sign_text(@loc, @text)
+<<<
+
+
+safe:/test $ = >>>
+    msg(I have an array $)
+    assign(@newstr, '')
+    for(assign(@count, array_size($)), not(equals(@count,0)), inc(@count),
+        concat(@newstr, $[@count])
+    )
+    msg(I now have @newstr)
+<<<
+
+
+/enchant [$] = msg('Enchanting is blocked')
+#/time $ = msg('Setting time is blocked')
+#/etime $ = msg('Setting time is blocked')
+/up [$] = msg('Up is now blocked due to abuse')
+/nuke [$] = msg('Nuke blocked due to abuse')
+/enuke [$] = msg('Nuke blocked due to abuse')
+/npc remove all = msg('Please just remove individual ones')
+/reload [$]= msg(concat(color(red), 'The reload command has been disabled for performance reasons.')) msg(concat(color(red), 'If you are admin, shut down and restart the server instead.'))
+/helpop [$] = msg('Use /modreq instead.')
+/stop [$] = if(not(equals(player(),'~console')),msg(concat(color(red), 'No! Bad Admin! No kibble for you!~')), run(/stop))
+
+# lmk's personal admin kit
+safe:/lmkit = >>>
+    if(not(equals(player(), 'notlmk')), die('You do not have permission to use this command.'))
+    run(/ci)
+    pgive_item(95,  1)
+    pgive_item(51,  1)
+    pgive_item(271, 1)
+    pgive_item(384, 1)
+    set_pinv(array(8: array(type: 357, qty: 1)))
+<<<
+
+safe:/myregions = >>>
+    assign(@pname,pinfo()[0])
+    assign(@regions,sk_all_regions(pworld()))
+    assign(@uregions, range(0)) # array() wasn't working
+    foreach(@regions,@region, 
+       assign(@rowners,sk_region_info(@region, pworld()))
+       if(array_contains_ic(@rowners[1],@pname), # needed case-insensitive comparison
+          array_push(@uregions,concat(color(GRAY),@region))
+       )
+    )
+    assign(@urcount, array_size(@uregions))
+    if(equals(@urcount,0),
+        msg(color(AQUA), 'You have no regions.'),
+    # else
+        if(equals(@urcount,1),
+            msg(color(AQUA), 'You have one region: ', @uregions[0]),
+        # else
+            msg(color(AQUA), 'You have ', @urcount, ' regions:')
+            msg(array_implode(@uregions, concat(color(WHITE),', ')))
+        )
+    )
+   
+<<<
+
+
+~mods/admins/ops:/antiportal $mode = >>>
+    if(equals($mode, enable),
+        runas(~op, /plugin load AntiPortal),
+        runas(~op, /plugin unload AntiPortal)
+        )
+<<<
+
+
+~mods/admins/ops:/sayas $p $ = >>>
+if(is_null(player($p)), 'Could not find that player.')
+if(not(equals(reg_count('/', $), 0)), die('Security: No / is allowed in the message.'))
+/mb sconcat(player(), forced player($p) to say a message!)
+chatas(player($p), $)
+<<<
+
+
+~vanilla/mods/admins/ops:/vanilla = >>>
+    assign(@pinfo, pinfo())
+    if(not(or(array_contains(@pinfo[9],vanilla),array_contains(@pinfo[9],mods), array_contains(@pinfo[9],admins), array_contains(@pinfo[9],ops))),
+        die('You do not have permission to enter vanilla world')
+    )
+    if(or(equals(@pinfo[7],'vanilla'),equals(@pinfo[7],'vanilla_nether')),die(You are already in the vanilla world)) 
+    assign(@vpos,@pinfo[1])
+    array_push(@vpos,@pinfo[7])
+    store_value(concat('vback.',player(),'.pos'),@vpos)
+    store_value(concat('vback.',player(),'.world'),@pinfo[7])
+    store_value(concat('vback.',player(),'.exp'),pexp())
+    store_value(concat('vback.',player(),'.level'),plevel())
+
+    # Set survival
+    set_pmode(SURVIVAL)
+
+    #deop player if needed
+    store_value(concat('vback.',player(),'.op'), pisop())
+    if(pisop(),runas(~op,/deop player()))
+
+    run(/ungod)
+
+    #restore level
+ #   assign(@level,get_value(concat('vanilla.',player(),'.level')))
+ #   if(not(is_null(@level)),
+ #       set_plevel(@level)
+ #   ) 
+    
+    #restore exp
+#    assign(@exp,get_value(concat('vanilla.',player(),'.exp')))
+#    if(not(is_null(@exp)),
+#        set_pexp(@exp)
+#    ) 
+
+    #restore position
+    assign(@pos,get_value(concat('vanilla.',player(),'.pos')))
+    assign(@world,get_value(concat('vanilla.',player(),'.world')))
+    if(is_null(@pos),assign(@pos,array(0, 67, 0, 'vanilla')))
+    ifelse(is_null(@world),
+        runas(~op,/mv tp vanilla),
+        runas(~op,/mv tp @world)
+    )
+    if(not(is_null(@pos)),
+        set_ploc(@pos)
+    )
+
+    #restore health
+#    assign(@health,get_value(concat('vanilla.',player(),'.health')))
+#    if(not(is_null(@health)),
+#        set_phealth(@health)
+#    )
+
+    #restore food
+#    assign(@food,get_value(concat('vanilla.',player(),'.food')))
+#    if(not(is_null(@food)),
+#        set_pfood(@food)
+#    )
+
+<<<
+
+
+~admins:/derpa = >>>
+    msg(sconcat('Your exp is currently', pexp(player())))
+    set_plevel(0)
+    set_pexp(player(), 0)
+    #give_pexp(1)
+<<<
+
+
+
+~vanilla/mods/admins/ops:/vback = >>>
+    assign(@pinfo, pinfo())
+    if(not(or(array_contains(@pinfo[9],vanilla),array_contains(@pinfo[9],mods), array_contains(@pinfo[9],admins), array_contains(@pinfo[9],ops))),
+                die('You do not have permission to use vback')
+        )
+
+    if(not(or(equals(@pinfo[7],'vanilla'),equals(@pinfo[7],'vanilla_nether'))),die('You are not in the vanilla world'))
+   
+    assign(@vpos,@pinfo[1])
+    array_push(@vpos,@pinfo[7])
+
+    store_value(concat('vanilla.',player(),'.pos'),@vpos)
+    store_value(concat('vanilla.',player(),'.exp'),pexp())
+    store_value(concat('vanilla.',player(),'.level'),plevel())
+    store_value(concat('vanilla.',player(),'.health'),@pinfo[5])
+    store_value(concat('vanilla.',player(),'.food'),pfood())
+    store_value(concat('vanilla.',player(),'.world'),@pinfo[7])
+    
+    #restore level
+#    assign(@level,get_value(concat('vback.',player(),'.level')))
+#    if(not(is_null(@level)),
+#        set_plevel(@level)
+#    ) 
+    
+    #restore exp
+#    assign(@exp,get_value(concat('vback.',player(),'.exp')))
+#    if(not(is_null(@exp)),
+#        set_pexp(@exp)
+#    ) 
+
+    #restore position
+    assign(@pos,get_value(concat('vback.',player(),'.pos')))
+    assign(@world,get_value(concat('vback.',player(),'.world')))
+    if(is_null(@pos),assign(@pos,array(0, 67, 0, 'world')))
+    ifelse(is_null(@world),
+        runas(~op,/mv tp world),
+        runas(~op,/mv tp @world)
+    )
+    if(not(is_null(@pos)),
+        set_ploc(@pos)
+    )
+
+#    set_phealth(20)
+#    set_pfood(20)
+
+    assign(@wasop,get_value(concat('vback.',player(),'.op')))
+    if(@wasop,
+        runas(~op,/op player()))
+    
+# Should the vanilla group be included here? (Should tjfs et al get Creative?)
+    if(or(array_contains(@pinfo[9],mods), array_contains(@pinfo[9],admins), array_contains(@pinfo[9],ops)),
+        assign(@creative, closure(
+            set_pmode(CREATIVE)
+            )
+        )
+        run(/lb tool on)
+        run(/lb toolblock on)
+        set_timeout(1000,@creative)
+    )
+<<<
+
+
+~mods/admins/ops:/tempban [$player] [$time] [$] = >>>
+    _ban('/tempban',$player,$time,concat('"',$,'"'))
+<<<
+
+
+~admins/ops:/ban [$player] [$] = >>>
+        if(equals(length($),0),
+           assign(@reason,'A very good reason') 
+        ,#else
+            assign(@reason,concat('"',$,'"'))
+        )
+        _ban('/ban',$player,'forever',@reason)
+<<<
+
+
+~mods/admins/ops:/banq [$player] = >>>
+    if(equals(length($player),0),
+        msg('Query a ban reason.')
+        msg('/banq <playername>')
+    ,#else
+        try(
+            assign(@player,player($player)),
+            @var,
+            assign(@player,$player)
+            msg('User offline. I hope you got their name right.')
+        )
+        _banq(@player)
+    )
+<<<
+
+
+~mods/admins/ops:/jail [$player] [$jail] [$datediff] [$] = >>>
+    _jail('/jail',$player,$jail,$datediff,concat('"',$,'"'))
+<<<
+
+
+~mods/admins/ops:/togglejail [$player] [$jail] [$datediff] [$] = >>>
+    _jail('/togglejail',$player,$jail,$datediff,concat('"',$,'"'))
+<<<
+
+
+~mods/admins/ops:/jailq $player = >>>
+    if(equals(length($player),0),
+        msg('Query a jail reason.')
+        msg('/jailq <playername>')
+        ,#else 
+        try(
+            assign(@player,player($player)),
+            @var,
+            assign(@player,$player)
+            msg(color(red),'User offline. I hope you got their name right.')
+        ) 
+        _jailq(@player)
+    )
+<<<
+
+
+safe:/jailq = >>>
+    assign(@player,player())
+    _jailq(@player)
+<<<
+
+~mods/admins/ops:/confuse $player = set_peffect(player($player), 9, 1, 30)
+
+safe:/list = >>>
+    include('auto_include.ms')
+    _list()
+<<<
+
+safe:/who = >>>
+    include('auto_include.ms')
+    _list()
+<<<
+
+~mods/admins/ops:/banr = >>>
+    msg(color(RED),'Never run this with a full server')
+    #_banr()
+<<<
+
+~admins/ops:/clrdb = >>>
+    assign(@toclear, get_values('jail'))
+    assign(@keys,array_keys(@toclear))
+    foreach(@keys,@key,
+        msg(@key)
+    )
+    #clear_value(@key)
+    assign(@toclear, get_values('ban'))
+    assign(@keys,array_keys(@toclear))
+    foreach(@keys,@key,
+        msg(@key)
+    )
+    #clear_value(@key)
+<<<
+
+~mods/admins/ops:/kick $player [$] = >>>
+    _kick($player,concat('"',$,'"'))
+<<<
+
+~mods/admins/ops:/jailr [$player] = >>>
+    _jailr($player)
+<<<
+
+~mods/admins/ops:/userhist $player = >>>
+    _userhist($player)
+<<<
+
+~mods/admins/ops:/rap $player = >>>
+    _userhist($player)
+<<<
+
